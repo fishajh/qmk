@@ -1,12 +1,13 @@
-#include "hajhh65.h"
+#include "rev1.h"
 #include "micro_oled.h"
+#include <stdio.h>
 
 __attribute__ ((weak))
 void draw_ui() {
-#ifdef OLED_DRIVER_ENABLE
-  oled_clear();
+#ifdef QWIIC_MICRO_OLED_ENABLE
+  clear_buffer();
   last_flush = timer_read();
-  oled_on();
+  send_command(DISPLAYON);
   if(clock_set_mode){
     draw_clock();
     return;
@@ -19,13 +20,17 @@ void draw_ui() {
     case OLED_TIME:
       draw_clock();
       break;
+    case OLED_LOGO:
+      draw_logo();
+      break;
     case OLED_OFF:
-      oled_off();
+      send_command(DISPLAYOFF);
       break;
   }
 #endif
 }
 
+// draw encoder mode
 void draw_encoder(int8_t startX, int8_t startY, bool show_legend){
   if(show_legend){
     draw_string(startX + 1, startY + 2, "ENC", PIXEL_ON, NORM, 0);
@@ -48,8 +53,8 @@ void draw_encoder(int8_t startX, int8_t startY, bool show_legend){
     case ENC_MODE_BRIGHTNESS:
       mode_string = "BRT";
       break;
-    case ENC_MODE_BACKLIGHT:
-      mode_string = "BKL";
+    case ENC_MODE_PAGE:
+      mode_string = "PAG";
       break;
     case ENC_MODE_CLOCK_SET:
       mode_string = "CLK";
@@ -66,7 +71,10 @@ void draw_encoder(int8_t startX, int8_t startY, bool show_legend){
   }
   draw_string(startX + 24, startY + 2, mode_string, PIXEL_ON, XOR, 0);
 }
+//end of funtion draw encoder mode
 
+
+// draw keyboard layer 
 void draw_layer_section(int8_t startX, int8_t startY, bool show_legend){
   if(show_legend){
     draw_string(startX + 1, startY + 2, "LAYER", PIXEL_ON, NORM, 0);
@@ -76,6 +84,60 @@ void draw_layer_section(int8_t startX, int8_t startY, bool show_legend){
   draw_rect_filled_soft(startX + 32, startY + 1, 9, 9, PIXEL_ON, NORM);
   draw_char(startX + 34, startY + 2, layer + 0x30, PIXEL_ON, XOR, 0);
 }
+//end 
+
+// draw matrix location funtion 
+void draw_matrix_location(int8_t  startX, int8_t startY, bool show_legend) {
+  if(show_legend){
+    for (uint8_t x = 0; x < MATRIX_ROWS; x++) {
+       for (uint8_t y = 0; y < MATRIX_COLS; y++) {
+          draw_pixel(startX + y + 2, startY + x + 2,(matrix_get_row(x) & (1 << y)) > 0, NORM);
+        }
+      }
+       draw_rect_soft(startX, startY, 19, 9, PIXEL_ON, NORM);
+       /* hadron oled location on thumbnail */
+       draw_rect_filled_soft(startX + 14, startY + 2, 3, 1, PIXEL_ON, NORM);
+    
+  } else {
+  //nothing in here
+  }
+}
+//end off draw mstrix location funtion
+
+//draw mods funtion
+void draw_mods_funtion(int8_t  startX, int8_t startY, bool show_legend) {
+ uint8_t mods = get_mods();
+  if(show_legend){
+    if (mods & MOD_LSFT) {
+    draw_rect_filled_soft(startX + 0, startY, 5 + (1 * 6), 11, PIXEL_ON, NORM);
+    draw_string(startX + 3, startY + 2, "S", PIXEL_OFF, NORM, 0);
+    } else {
+    draw_string(startX + 3, startY + 2, "S", PIXEL_ON, NORM, 0);
+     }
+    if (mods & MOD_LCTL) {
+    draw_rect_filled_soft(startX + 10, startY, 5 + (1 * 6), 11, PIXEL_ON, NORM);
+    draw_string(startX + 13, startY + 2, "C", PIXEL_OFF, NORM, 0);
+    } else {
+    draw_string(startX + 13, startY + 2, "C", PIXEL_ON, NORM, 0);
+     }
+    if (mods & MOD_LALT) {
+    draw_rect_filled_soft(startX + 20, startY, 5 + (1 * 6), 11, PIXEL_ON, NORM);
+    draw_string(startX + 23, startY + 2, "A", PIXEL_OFF, NORM, 0);
+    } else {
+    draw_string(startX + 23, startY + 2, "A", PIXEL_ON, NORM, 0);
+    }
+    if (mods & MOD_LGUI) {
+    draw_rect_filled_soft(startX + 30, startY, 5 + (1 * 6), 11, PIXEL_ON, NORM);
+    draw_string(startX + 33, startY + 2, "G", PIXEL_OFF, NORM, 0);
+    } else {
+    draw_string(startX + 33, startY + 2, "G", PIXEL_ON, NORM, 0);
+    }
+  } else {
+  //nothing in here
+  }
+}
+//end of draw mods
+
 
 void draw_default(){
   uint8_t hour = last_minute / 60;
@@ -86,18 +148,13 @@ void draw_default(){
     minute = minute_config;
   }
 
-  bool is_pm = (hour / 12) > 0;
-  hour = hour % 12;
-  if (hour == 0){
-    hour = 12;
-  }
   char hour_str[3] = "";
   char min_str[3] = "";
 
   sprintf(hour_str, "%02d", hour);
   sprintf(min_str, "%02d", minute);
 
-  uint8_t mods = get_mods();
+  
 
 /* Layer indicator is 41 x 10 pixels */
   draw_layer_section(0,0,true);
@@ -105,47 +162,16 @@ void draw_default(){
 #define ENCODER_INDICATOR_X 45
 #define ENCODER_INDICATOR_Y 0
   draw_encoder(ENCODER_INDICATOR_X, ENCODER_INDICATOR_Y, true);
+
 /* Matrix display is 19 x 9 pixels */
 #define MATRIX_DISPLAY_X 0
 #define MATRIX_DISPLAY_Y 18
-
-  for (uint8_t x = 0; x < MATRIX_ROWS; x++) {
-    for (uint8_t y = 0; y < MATRIX_COLS; y++) {
-      draw_pixel(MATRIX_DISPLAY_X + y + 2, MATRIX_DISPLAY_Y + x + 2,(matrix_get_row(x) & (1 << y)) > 0, NORM);
-    }
-  }
-  draw_rect_soft(MATRIX_DISPLAY_X, MATRIX_DISPLAY_Y, 19, 9, PIXEL_ON, NORM);
-  /* hadron oled location on thumbnail */
-  draw_rect_filled_soft(MATRIX_DISPLAY_X + 14, MATRIX_DISPLAY_Y + 2, 3, 1, PIXEL_ON, NORM);
+  draw_matrix_location(MATRIX_DISPLAY_X, MATRIX_DISPLAY_Y, false);
 
 /* Mod display is 41 x 16 pixels */
 #define MOD_DISPLAY_X 30
 #define MOD_DISPLAY_Y 18
-
-  if (mods & MOD_LSFT) {
-    draw_rect_filled_soft(MOD_DISPLAY_X + 0, MOD_DISPLAY_Y, 5 + (1 * 6), 11, PIXEL_ON, NORM);
-    draw_string(MOD_DISPLAY_X + 3, MOD_DISPLAY_Y + 2, "S", PIXEL_OFF, NORM, 0);
-  } else {
-    draw_string(MOD_DISPLAY_X + 3, MOD_DISPLAY_Y + 2, "S", PIXEL_ON, NORM, 0);
-  }
-  if (mods & MOD_LCTL) {
-    draw_rect_filled_soft(MOD_DISPLAY_X + 10, MOD_DISPLAY_Y, 5 + (1 * 6), 11, PIXEL_ON, NORM);
-    draw_string(MOD_DISPLAY_X + 13, MOD_DISPLAY_Y + 2, "C", PIXEL_OFF, NORM, 0);
-  } else {
-    draw_string(MOD_DISPLAY_X + 13, MOD_DISPLAY_Y + 2, "C", PIXEL_ON, NORM, 0);
-  }
-  if (mods & MOD_LALT) {
-    draw_rect_filled_soft(MOD_DISPLAY_X + 20, MOD_DISPLAY_Y, 5 + (1 * 6), 11, PIXEL_ON, NORM);
-    draw_string(MOD_DISPLAY_X + 23, MOD_DISPLAY_Y + 2, "A", PIXEL_OFF, NORM, 0);
-  } else {
-    draw_string(MOD_DISPLAY_X + 23, MOD_DISPLAY_Y + 2, "A", PIXEL_ON, NORM, 0);
-  }
-  if (mods & MOD_LGUI) {
-    draw_rect_filled_soft(MOD_DISPLAY_X + 30, MOD_DISPLAY_Y, 5 + (1 * 6), 11, PIXEL_ON, NORM);
-    draw_string(MOD_DISPLAY_X + 33, MOD_DISPLAY_Y + 2, "G", PIXEL_OFF, NORM, 0);
-  } else {
-    draw_string(MOD_DISPLAY_X + 33, MOD_DISPLAY_Y + 2, "G", PIXEL_ON, NORM, 0);
-  }
+draw_mods_funtion(MOD_DISPLAY_X, MOD_DISPLAY_Y, false);
 
 /* Lock display is 23 x 21 */
 #define LOCK_DISPLAY_X 100
@@ -165,16 +191,18 @@ void draw_default(){
     draw_string(LOCK_DISPLAY_X + 3, LOCK_DISPLAY_Y + 11 +1, "SCR", PIXEL_ON, NORM, 0);
   }
 
-#define TIME_DISPLAY_X 82
-#define TIME_DISPLAY_Y 22
-  draw_string(TIME_DISPLAY_X, TIME_DISPLAY_Y, hour_str, PIXEL_ON, NORM, 0);
-  draw_string(TIME_DISPLAY_X + 11, TIME_DISPLAY_Y, ":", PIXEL_ON, NORM, 0);
-  draw_string(TIME_DISPLAY_X + 15, TIME_DISPLAY_Y, min_str, PIXEL_ON, NORM, 0);
-  if(is_pm){
-    draw_string(TIME_DISPLAY_X + 27, TIME_DISPLAY_Y, "pm", PIXEL_ON, NORM, 0);
-  } else{
-    draw_string(TIME_DISPLAY_X + 27, TIME_DISPLAY_Y, "am", PIXEL_ON, NORM, 0);
+  if (led_numlock == true) {
+    draw_rect_filled_soft(LOCK_DISPLAY_X + 0, LOCK_DISPLAY_Y + 21, 5 + (3 * 6), 9, PIXEL_ON, NORM);
+    draw_string(LOCK_DISPLAY_X + 3, LOCK_DISPLAY_Y + 21 +1, "NUM", PIXEL_OFF, NORM, 0);
+  } else if (led_numlock == false) {
+    draw_string(LOCK_DISPLAY_X + 3, LOCK_DISPLAY_Y + 21 +1, "NUM", PIXEL_ON, NORM, 0);
   }
+
+#define CLOCK_DISPLAY_X 14
+#define CLOCK_DISPLAY_Y 14
+  draw_string(CLOCK_DISPLAY_X+2, CLOCK_DISPLAY_Y, hour_str, PIXEL_ON, NORM, 1);
+  draw_string(CLOCK_DISPLAY_X + 20, CLOCK_DISPLAY_Y - 1, ":", PIXEL_ON, NORM, 1);
+  draw_string(CLOCK_DISPLAY_X + 28, CLOCK_DISPLAY_Y, min_str, PIXEL_ON, NORM, 1);
 
   send_buffer();
 }
@@ -194,11 +222,6 @@ void draw_clock(){
     day = day_config;
   }
 
-  bool is_pm = (hour / 12) > 0;
-  hour = hour % 12;
-  if (hour == 0){
-    hour = 12;
-  }
   char hour_str[3] = "";
   char min_str[3] = "";
   char year_str[5] = "";
@@ -220,24 +243,20 @@ void draw_clock(){
   draw_string(DATE_DISPLAY_X + 44, DATE_DISPLAY_Y, "-", PIXEL_ON, NORM, 0);
   draw_string(DATE_DISPLAY_X + 50, DATE_DISPLAY_Y, day_str, PIXEL_ON, NORM, 0);
 
-#define CLOCK_DISPLAY_X 6
+#define CLOCK_DISPLAY_X 14
 #define CLOCK_DISPLAY_Y 14
   draw_string(CLOCK_DISPLAY_X, CLOCK_DISPLAY_Y, hour_str, PIXEL_ON, NORM, 1);
   draw_string(CLOCK_DISPLAY_X + 17, CLOCK_DISPLAY_Y, ":", PIXEL_ON, NORM, 1);
   draw_string(CLOCK_DISPLAY_X + 25, CLOCK_DISPLAY_Y, min_str, PIXEL_ON, NORM, 1);
-  if(is_pm){
-    draw_string(CLOCK_DISPLAY_X + 41, CLOCK_DISPLAY_Y, "pm", PIXEL_ON, NORM, 1);
-  } else{
-    draw_string(CLOCK_DISPLAY_X + 41, CLOCK_DISPLAY_Y, "am", PIXEL_ON, NORM, 1);
-  }
-
   if(clock_set_mode){
     switch(time_config_idx){
       case 0: // hour
       default:
+        draw_line(CLOCK_DISPLAY_X, CLOCK_DISPLAY_Y + 16, CLOCK_DISPLAY_X + 16, CLOCK_DISPLAY_Y + 16, PIXEL_ON, NORM);
         draw_line(CLOCK_DISPLAY_X, CLOCK_DISPLAY_Y + 17, CLOCK_DISPLAY_X + 16, CLOCK_DISPLAY_Y + 17, PIXEL_ON, NORM);
         break;
       case 1: // minute
+        draw_line(CLOCK_DISPLAY_X + 25, CLOCK_DISPLAY_Y + 16, CLOCK_DISPLAY_X + 41, CLOCK_DISPLAY_Y + 16, PIXEL_ON, NORM);
         draw_line(CLOCK_DISPLAY_X + 25, CLOCK_DISPLAY_Y + 17, CLOCK_DISPLAY_X + 41, CLOCK_DISPLAY_Y + 17, PIXEL_ON, NORM);
         break;
       case 2: // year
@@ -264,8 +283,39 @@ void draw_clock(){
   } else if (led_capslock == false) {
     draw_string(CAPS_DISPLAY_X + 3, CAPS_DISPLAY_Y +1, "CAPS", PIXEL_ON, NORM, 0);
   }
-
-
   send_buffer();
+
+}
+
+
+void draw_logo(){
+static uint8_t qmk_logo[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+        0xC0, 0xE0, 0xE0, 0xFC, 0xFC, 0xE0, 0xFC, 0xFC, 0xE0, 0xF0, 0xFC, 0xE0, 0xE0, 0xFC, 0xE0, 0xE0, 0xFC, 0xFC, 0xE0, 0xE0, 0xC0, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x10, 0x10,
+        0x30, 0xE0, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00,
+        0x80, 0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80,
+        0x80, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xB2, 0xB2, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x01, 0x03, 0xFF, 0xFF, 0xFF, 0x03, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x03, 0xFF, 0xFF, 0xFF, 0xFF, 0xB7, 0xB2, 0xB2, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F, 0x02, 0x02, 0x03, 0x01, 0x00, 0x06,
+        0x1F, 0x10, 0x10, 0x10, 0x1F, 0x06, 0x00, 0x03, 0x1E, 0x18, 0x0F, 0x01, 0x0F, 0x18, 0x1E, 0x01, 0x00, 0x0F, 0x1F, 0x12, 0x02, 0x12,
+        0x13, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x0E, 0x1F, 0x12, 0x02, 0x12, 0x13, 0x00, 0x00, 0x1F, 0x10, 0x10, 0x10, 0x1F, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x4D, 0x4D, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xF8, 0xF9, 0xF3,
+        0xF3, 0xC0, 0x80, 0xF3, 0xF3, 0xF3, 0xF9, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xED, 0x4D, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x20, 0x10, 0x10, 0xE0, 0xC0, 0x00, 0x70, 0xC0,
+        0x00, 0x80, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x1C, 0xF0, 0x00, 0x00, 0xFC, 0x0C, 0x38, 0xE0,
+        0x00, 0x00, 0xC0, 0x38, 0x0C, 0xFC, 0x00, 0x00, 0xFC, 0xFC, 0x60, 0x90, 0x0C, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x07, 0x3F, 0x3F, 0x07, 0x3F, 0x3F, 0x07, 0x0F, 0x3F, 0x07,
+        0x07, 0x3F, 0x07, 0x07, 0x3F, 0x3F, 0x07, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x06, 0x04, 0x04, 0x07, 0x01, 0x00, 0x00, 0x13, 0x1E, 0x03, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01, 0x06, 0x04, 0x04, 0x04, 0x04, 0x07, 0x0D, 0x08, 0x00, 0x07, 0x00, 0x00, 0x01, 0x07, 0x07, 0x00, 0x00,
+        0x00, 0x07, 0x00, 0x00, 0x07, 0x07, 0x00, 0x01, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+ draw_Bitmap(qmk_logo);
+send_buffer();
 
 }

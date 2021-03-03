@@ -1,4 +1,4 @@
-#include "hajhh65.h"
+#include "rev1.h"
 #include "tmk_core/common/eeprom.h"
 
 void pre_encoder_mode_change(){
@@ -11,9 +11,7 @@ void pre_encoder_mode_change(){
     // timespec.dstflag = last_timespec.dstflag;
     timespec.millisecond = (hour_config * 60 + minute_config) * 60 * 1000;
     rtcSetTime(&RTCD1, &timespec);
-  } else if (encoder_mode == ENC_MODE_BACKLIGHT){
-    backlight_config_save();
-  }
+  } 
 }
 
 void post_encoder_mode_change(){
@@ -99,15 +97,8 @@ uint16_t handle_encoder_clockwise(){
     case ENC_MODE_SCROLL:
       mapped_code = KC_WH_D;
       break;
-    case ENC_MODE_BACKLIGHT:
-      kb_backlight_config.level = kb_backlight_config.level + 1;
-      if(kb_backlight_config.level > BACKLIGHT_LEVELS){
-        kb_backlight_config.level = BACKLIGHT_LEVELS;
-      }
-      backlight_set(kb_backlight_config.level);
-      if (kb_backlight_config.level != 0){
-        kb_backlight_config.enable = true;
-      }
+    case ENC_MODE_PAGE:
+      mapped_code = KC_PGUP;
       break;
     case ENC_MODE_BRIGHTNESS:
       mapped_code = KC_BRIGHTNESS_UP;
@@ -144,15 +135,8 @@ uint16_t handle_encoder_ccw(){
     case ENC_MODE_SCROLL:
       mapped_code = KC_WH_U;
       break;
-    case ENC_MODE_BACKLIGHT:
-      // mapped_code = BL_DEC;
-      if(kb_backlight_config.level != 0){
-        kb_backlight_config.level = kb_backlight_config.level - 1;
-      }
-      backlight_set(kb_backlight_config.level);
-      if (kb_backlight_config.level == 0){
-        kb_backlight_config.enable = false;
-      }
+    case ENC_MODE_PAGE:
+      mapped_code = KC_PGDOWN;
       break;
     case ENC_MODE_BRIGHTNESS:
       mapped_code = KC_BRIGHTNESS_DOWN;
@@ -190,14 +174,8 @@ uint16_t handle_encoder_press(){
     case ENC_MODE_SCROLL:
       mapped_code = KC_BTN3;
       break;
-    case ENC_MODE_BACKLIGHT:
-      // mapped_code = BL_TOGG;
-      kb_backlight_config.breathing = !kb_backlight_config.breathing;
-      if(!kb_backlight_config.breathing){
-        breathing_disable();
-      } else{
-        breathing_enable();
-      }
+    case ENC_MODE_PAGE:
+      mapped_code = KC_PSCR;
       break;
 #ifdef DYNAMIC_KEYMAP_ENABLE
     case ENC_MODE_CUSTOM0:

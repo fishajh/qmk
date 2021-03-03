@@ -20,3 +20,4 @@
 #ifdef KEYBOARD_hajhh_hajhh65_rev1
     #include "rev1.h"
 #endif
+

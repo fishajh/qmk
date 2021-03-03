@@ -27,12 +27,6 @@
  *                  ROW2COL = ROW = Anode (+), COL = Cathode (-, marked on diode)
  *
  */
-/*
-#define MATRIX_COL_PINS { B15, B10, B0, A5, A4, A3 }
-#define MATRIX_ROW_PINS { A10, A15, B3, B4 }
-#define MATRIX_COL_PINS_RIGHT { B10, B15, A10, A15, B3, B4 }
-#define MATRIX_ROW_PINS_RIGHT { B0, A5, A4, A3 }
-*/
 #define MATRIX_COL_PINS { A0,A1,A2,A3,C13,B0,A7,B3,A15,A10,A6,A8,B15,B14,B13,B12 }
 #define MATRIX_ROW_PINS { B10,A5,A4,B5,B4}
 
@@ -41,10 +35,12 @@
 
 #define MATRIX_IO_DELAY 5
 
+// Econder config
 #define ENCODERS_PAD_A { B8 }
 #define ENCODERS_PAD_B { B9 }
 #define ENCODER_RESOLUTION 5
 
+// RGB config
 #define RGB_DI_PIN B1
 #define RGBLED_NUM 14
 #define RGBLIGHT_LIMIT_VAL 120
@@ -55,6 +51,25 @@
 #define WS2812_PWM_PAL_MODE 2
 #define WS2812_DMA_STREAM STM32_DMA1_STREAM2
 #define WS2812_DMA_CHANNEL 5
+
+// OLED config
+#define OLED_DISPLAY_ADDRESS  0x3C                 //The i2c address of the OLED Display
+#define OLED_TIMEOUT          0                    //Turns off the OLED screen after 60000ms of keyboard inactivity. Set to 0 to disable.
+#define OLED_BRIGHTNESS       255                  //The default brightness level of the OLED, from 0 to 255.
+#define OLED_SCROLL_TIMEOUT   0                    //Scrolls the OLED screen after 0ms of OLED inactivity. Set to 0 to disable.
+#define OLED_FONT_H           "glcdfont.c"         //The font code file to use for custom fonts
+
+
+#ifdef QWIIC_MICRO_OLED_ENABLE
+
+/* screen off after this many milliseconds */
+#define ScreenOffInterval 60000 /* milliseconds */
+#undef  I2C_ADDRESS_SA0_1
+#define I2C_ADDRESS_SA0_1 0b0111100
+#define LCDWIDTH      128
+#define LCDHEIGHT     32
+
+#endif
 
 /* Debounce reduces chatter (unintended double-presses) - set 0 if debouncing is not needed */
 #define DEBOUNCE 5
