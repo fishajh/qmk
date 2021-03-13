@@ -29,7 +29,7 @@
 #define HALCONF_H
 
 #define _CHIBIOS_HAL_CONF_
-#define _CHIBIOS_HAL_CONF_VER_7_0_
+#define _CHIBIOS_HAL_CONF_VER_7_1_
 
 #include "mcuconf.h"
 
@@ -302,7 +302,7 @@
  * @brief   Enables the mutual exclusion APIs on the I2C bus.
  */
 #if !defined(I2C_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
-#define I2C_USE_MUTUAL_EXCLUSION            FALSE
+#define I2C_USE_MUTUAL_EXCLUSION            TRUE
 #endif
 
 /*===========================================================================*/

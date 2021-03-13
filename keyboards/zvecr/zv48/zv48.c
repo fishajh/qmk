@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "zv48.h"
-
+/*
 void keyboard_pre_init_kb(void){
     // Workaround for reversible pcb/mcu
     palSetLineMode(C13, PAL_MODE_INPUT_PULLUP);
@@ -25,3 +25,4 @@ void keyboard_pre_init_kb(void){
 
     keyboard_pre_init_user();
 }
+*/

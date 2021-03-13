@@ -116,7 +116,6 @@ __attribute__ ((weak))
 void draw_ui(void);
 void draw_default(void);
 void draw_clock(void);
-void draw_logo(void);
 
 void custom_config_load(void);
 
