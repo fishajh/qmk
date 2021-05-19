@@ -50,6 +50,7 @@ void draw_rect_filled(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8
 void draw_rect_filled_soft(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t color, uint8_t mode);
 void draw_char(uint8_t x, uint8_t y, uint8_t c, uint8_t color, uint8_t mode, uint8_t font);
 void draw_string(uint8_t x, uint8_t y, char* string, uint8_t color, uint8_t mode, uint8_t font);
+void drawBitmap(uint8_t *bitArray);
 
 #define I2C_ADDRESS_SA0_0 0b0111100
 #ifndef I2C_ADDRESS_SA0_1

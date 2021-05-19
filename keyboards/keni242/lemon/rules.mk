@@ -1,0 +1,3 @@
+SPLIT_KEYBOARD = yes
+DEFAULT_FOLDER = keni242/lemon/rev1/f411
+

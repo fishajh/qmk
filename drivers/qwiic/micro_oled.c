@@ -473,3 +473,11 @@ void draw_string(uint8_t x, uint8_t y, char* string, uint8_t color, uint8_t mode
         cur_x += fontWidth + 1;
     }
 }
+
+void drawBitmap(uint8_t *bitArray)
+{
+	for (int i = 0; i < (LCDWIDTH * LCDHEIGHT / 8); i++)
+		micro_oled_screen_buffer[i] = bitArray[i];
+}
+
+
